@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Penugasan Pegawai</title>
+    
+    <!-- Memanggil library Supabase langsung dari internet -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #007bff; color: white; }
+    </style>
+</head>
+<body>
+
+    <h2>Daftar Penugasan Pegawai</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Nama Pegawai</th>
+                <th>NIP / NI PPPK</th>
+                <th>Satuan Penugasan</th>
+                <!-- Saya sesuaikan kolom status jika ada di database Anda -->
+                <th>Periode</th> 
+            </tr>
+        </thead>
+        <!-- Di sinilah data dari Supabase akan dimunculkan -->
+        <tbody id="badan-tabel">
+            <tr><td colspan="5">Memuat data dari Supabase...</td></tr>
+        </tbody>
+    </table>
+
+    <script>
+        // 1. URL DAN KEY SUPABASE ANDA
+        const SUPABASE_URL = 'https://ztgrfzegxeovbkupslvz.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_STQLp6ubM4SQ1gl3sYAyDA_4BnaZWLL';
+
+        // 2. Mengaktifkan koneksi ke Supabase (nama variabel diubah jadi supabaseClient)
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // 3. Fungsi untuk mengambil data pegawai
+        async function ambilDataPegawai() {
+            // Meminta data dari tabel penugasan_pegawai
+            const { data, error } = await supabaseClient
+                .from('penugasan_pegawai')
+                .select('*')
+                .order('no', { ascending: true })
+                .limit(20); // Ambil 20 data pertama sebagai percobaan
+
+            if (error) {
+                console.error("Gagal mengambil data:", error);
+                document.getElementById('badan-tabel').innerHTML = "<tr><td colspan='5' style='color:red;'>Gagal memuat data: " + error.message + "</td></tr>";
+                return;
+            }
+
+            // 4. Menampilkan data ke dalam tabel HTML
+            let barisTabel = '';
+            data.forEach(pegawai => {
+                barisTabel += `
+                    <tr>
+                        <td>${pegawai.no || '-'}</td>
+                        <td>${pegawai.nama || '-'}</td>
+                        <td>${pegawai.nip_nippk || '-'}</td>
+                        <td>${pegawai.satuan_penugasan || '-'}</td>
+                        <td>${pegawai.periode_penugasan || '-'}</td>
+                    </tr>
+                `;
+            });
+
+            // Mengganti tulisan "Memuat data..." dengan data asli
+            document.getElementById('badan-tabel').innerHTML = barisTabel;
+        }
+
+        // Jalankan fungsi saat halaman web dibuka
+        ambilDataPegawai();
+    </script>
+</body>
+</html>
