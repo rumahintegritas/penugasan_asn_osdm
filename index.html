@@ -10,8 +10,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- SweetAlert2 untuk Notifikasi Modern -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- SheetJS untuk Export/Import Excel -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- TAMBAHAN: Library Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -30,7 +28,7 @@
                 </div>
                 <div>
                     <h1 class="font-bold text-base md:text-lg tracking-wide text-white">SISTEM PENUGASAN & PENOMORAN SURAT</h1>
-                    <p class="text-xs text-slate-400">Kementerian Sosial RI • Supabase Database Edition (Tahap 1)</p>
+                    <p class="text-xs text-slate-400">Kementerian Sosial RI • Supabase Database Edition (Tahap 2)</p>
                 </div>
             </div>
             <div class="flex items-center gap-2">
@@ -60,7 +58,7 @@
     <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
         <div id="alertBox" class="hidden mb-4 p-4 rounded-xl text-sm font-medium border"></div>
 
-        <!-- TAB 1: INPUT SATUAN (SUDAH DIMIGRASI) -->
+        <!-- TAB 1: INPUT SATUAN (TAHAP 1 SELESAI) -->
         <div id="pane-manual" class="tab-content-pane active space-y-6">
             <div class="bg-slate-800/60 backdrop-blur border border-slate-700/80 rounded-2xl p-6 shadow-xl">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 mb-6 border-b border-slate-700">
@@ -197,32 +195,78 @@
             </div>
         </div>
 
-        <!-- TAB 2 & 3 (DIBLOKIR SEMENTARA UNTUK TAHAP 1) -->
+        <!-- TAB 2: IMPORT EXCEL (MASIH DIBLOKIR UNTUK TAHAP SELANJUTNYA) -->
         <div id="pane-import" class="tab-content-pane space-y-6">
             <div class="bg-slate-800/60 border border-slate-700 rounded-2xl p-8 text-center">
                 <i class="fa-solid fa-person-digging text-4xl text-amber-500 mb-4"></i>
                 <h3 class="text-xl font-bold text-white mb-2">Tab Import Excel Sedang Dimigrasi</h3>
-                <p class="text-slate-400">Fitur ini akan dikerjakan pada Tahap 2 setelah fungsi input manual tervalidasi dengan baik di Supabase.</p>
+                <p class="text-slate-400">Fitur ini akan dikerjakan pada Tahap 3.</p>
             </div>
         </div>
+
+        <!-- TAB 3: EDIT / UPDATE DATA (TAHAP 2 SELESAI) -->
         <div id="pane-edit" class="tab-content-pane space-y-6">
-            <div class="bg-slate-800/60 border border-slate-700 rounded-2xl p-8 text-center">
-                <i class="fa-solid fa-person-digging text-4xl text-amber-500 mb-4"></i>
-                <h3 class="text-xl font-bold text-white mb-2">Tab Edit Data Sedang Dimigrasi</h3>
-                <p class="text-slate-400">Fitur ini akan dikerjakan pada Tahap 2 setelah fungsi input manual tervalidasi dengan baik di Supabase.</p>
+            <div class="bg-slate-800/60 backdrop-blur border border-slate-700/80 rounded-2xl p-6 shadow-xl space-y-4">
+                <h3 class="font-bold text-sm text-blue-400">🔍 1. Cari Data Pegawai di Supabase</h3>
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+                    <div class="md:col-span-10">
+                        <input type="text" id="editSearchKeyword" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200" placeholder="Ketik Nama atau NIP / NI PPPK..." onkeydown="if(event.key==='Enter') doSearchEditPegawai()">
+                    </div>
+                    <div class="md:col-span-2">
+                        <button type="button" id="btnSearchEdit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-xl text-sm transition cursor-pointer" onclick="doSearchEditPegawai()">Cari</button>
+                    </div>
+                </div>
+
+                <div id="editSearchResultArea" class="hidden overflow-x-auto border border-slate-700 rounded-xl max-h-56 mt-4">
+                    <table class="w-full text-left text-xs text-slate-300 whitespace-nowrap">
+                        <thead class="bg-slate-900 sticky top-0 text-slate-200 font-bold border-b border-slate-700">
+                            <tr><th class="p-2.5">Aksi</th><th class="p-2.5">No Urut</th><th class="p-2.5">Nama Pegawai</th><th class="p-2.5">NIP / NI PPPK</th><th class="p-2.5">Satuan Tugas</th><th class="p-2.5">Status</th></tr>
+                        </thead>
+                        <tbody id="editSearchResultBody" class="divide-y divide-slate-800"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="editFormContainer" class="hidden bg-slate-800/60 backdrop-blur border border-slate-700/80 rounded-2xl p-6 shadow-xl">
+                <h3 class="font-bold text-sm text-amber-400 mb-4">✏️ 2. Edit Formulir & Perbarui Status</h3>
+                <form id="editTaskForm" onsubmit="submitUpdateData(event)" class="space-y-4">
+                    <input type="hidden" id="edit_noUrut">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Status Penugasan</label>
+                            <select id="edit_status" class="w-full bg-slate-900 border border-rose-500/50 rounded-xl px-3 py-2 text-sm text-slate-200 font-bold">
+                                <option value="Proses">Proses</option>
+                                <option value="Sudah TTE">Sudah TTE</option>
+                                <option value="Simpeg OK">Simpeg OK</option>
+                                <option value="Selesai">Selesai</option>
+                                <option value="Batal">Batal</option>
+                            </select>
+                        </div>
+                        <div><label class="block text-xs font-semibold text-slate-300 mb-1">Nama Pegawai</label><input type="text" id="edit_nama" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200" required></div>
+                        <div><label class="block text-xs font-semibold text-slate-300 mb-1">NIP / NI PPPK</label><input type="text" id="edit_nip" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 font-mono" required></div>
+                        
+                        <div class="md:col-span-2"><label class="block text-xs font-semibold text-slate-300 mb-1">Satuan Tugas (Tujuan)</label><input type="text" id="edit_satuanTugas" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200" list="listSatker"></div>
+                        <div><label class="block text-xs font-semibold text-slate-300 mb-1">Periode (Tahun)</label><input type="text" id="edit_periode" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></div>
+                    </div>
+                    <div class="pt-3">
+                        <button type="submit" id="btnUpdateData" class="w-full bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold py-3 px-4 rounded-xl shadow transition cursor-pointer text-sm">💾 Simpan Perubahan Data ke Database Supabase</button>
+                    </div>
+                </form>
             </div>
         </div>
 
     </main>
 
-    <!-- SKRIP LOGIKA SUPABASE (TAHAP 1) -->
+    <!-- SKRIP LOGIKA SUPABASE (TAHAP 1 & 2) -->
     <script>
         // 1. KONEKSI SUPABASE
         const SUPABASE_URL = 'https://ztgrfzegxeovbkupslvz.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_STQLp6ubM4SQ1gl3sYAyDA_4BnaZWLL';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // 2. DATA DUMMY KONFIGURASI (Hardcode sementara karena Apps Script dicabut)
+        let currentEditList = []; // Menyimpan data hasil pencarian sementara
+
+        // 2. DATA DUMMY KONFIGURASI
         const globalConfigMaster = {
             satker: [
                 "Biro Organisasi dan Sumber Daya Manusia", 
@@ -256,7 +300,6 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // Fungsi mengisi data Satker & Pangkat ke form HTML
         function loadConfigOptions() {
             document.getElementById('listSatker').innerHTML = globalConfigMaster.satker.map(s => `<option value="${s}">`).join('');
             handleKategoriChange();
@@ -275,28 +318,20 @@
             }
         }
 
-        // Fungsi mengambil nomor estimasi terakhir dari Supabase
         async function loadPreviewNumber() {
             const el = document.getElementById('noSK');
             try {
-                const { data, error } = await supabaseClient
-                    .from('penugasan_pegawai')
-                    .select('no')
-                    .order('no', { ascending: false })
-                    .limit(1);
-
+                const { data, error } = await supabaseClient.from('penugasan_pegawai').select('no').order('no', { ascending: false }).limit(1);
                 let nextNo = 1;
-                if (data && data.length > 0 && data[0].no) {
-                    nextNo = Number(data[0].no) + 1;
-                }
+                if (data && data.length > 0 && data[0].no) { nextNo = Number(data[0].no) + 1; }
                 const tahun = new Date().getFullYear();
                 el.innerText = `${nextNo} / SK-OSDM / ${tahun}`;
-            } catch (err) {
-                el.innerText = "Gagal memuat!";
-            }
+            } catch (err) { el.innerText = "Gagal memuat!"; }
         }
 
-        // FUNGSI UTAMA: MENYIMPAN DATA KE SUPABASE
+        // ==========================================
+        // FUNGSI TAHAP 1: MENYIMPAN DATA BARU
+        // ==========================================
         async function saveDataSupabase(e) {
             e.preventDefault();
             const btn = document.getElementById('btnSubmit');
@@ -305,28 +340,17 @@
             const nipVal = document.getElementById('nip').value.trim();
 
             if (tglMulai && tglBerakhir && tglMulai > tglBerakhir) {
-                Swal.fire('Validasi Gagal', 'Tanggal Mulai tidak boleh melebihi Tanggal Berakhir!', 'warning');
-                return;
+                Swal.fire('Validasi Gagal', 'Tanggal Mulai tidak boleh melebihi Tanggal Berakhir!', 'warning'); return;
             }
 
-            btn.disabled = true; 
-            btn.innerText = 'Menyimpan ke Supabase...';
+            btn.disabled = true; btn.innerText = 'Menyimpan ke Supabase...';
 
-            // 1. CARI NOMOR URUT TERAKHIR DULU SEBELUM MENYIMPAN
             let nextNo = 1;
-            const { data: lastData } = await supabaseClient
-                .from('penugasan_pegawai')
-                .select('no')
-                .order('no', { ascending: false })
-                .limit(1);
+            const { data: lastData } = await supabaseClient.from('penugasan_pegawai').select('no').order('no', { ascending: false }).limit(1);
+            if (lastData && lastData.length > 0 && lastData[0].no) { nextNo = Number(lastData[0].no) + 1; }
 
-            if (lastData && lastData.length > 0 && lastData[0].no) {
-                nextNo = Number(lastData[0].no) + 1;
-            }
-
-            // 2. MASUKKAN NOMOR TERSEBUT (nextNo) KE DALAM DATA YANG AKAN DISIMPAN
             const payload = {
-                no: nextNo, // <--- Ini yang membuat error merah tadi hilang
+                no: nextNo,
                 nama: document.getElementById('nama').value,
                 nip_nippk: nipVal,
                 satuan_penugasan: document.getElementById('satuanTugas').value,
@@ -334,31 +358,131 @@
                 status: document.getElementById('status').value
             };
 
-            // 3. KIRIM DATA KE SUPABASE
-            const { data, error } = await supabaseClient
-                .from('penugasan_pegawai')
-                .insert([payload])
-                .select(); 
+            const { data, error } = await supabaseClient.from('penugasan_pegawai').insert([payload]).select(); 
+            btn.disabled = false; btn.innerText = 'Simpan Data ke Database Supabase';
 
-            btn.disabled = false; 
-            btn.innerText = 'Simpan Data ke Database Supabase';
-
-            if (error) {
-                showAlert('danger', 'Gagal menyimpan ke Supabase: ' + error.message);
-            } else {
+            if (error) { showAlert('danger', 'Gagal menyimpan ke Supabase: ' + error.message); } 
+            else {
                 showAlert('success', `<strong>Berhasil!</strong> Data pegawai berhasil disimpan ke Supabase dengan Nomor Urut: <strong>${nextNo}</strong>`);
-                
-                // Mereset formulir setelah sukses
                 document.getElementById('taskForm').reset();
                 document.getElementById('tglSK').value = new Date().toISOString().split('T')[0];
                 document.getElementById('periode').value = new Date().getFullYear();
-                
-                // Memperbarui nomor urut estimasi di layar
                 loadPreviewNumber();
             }
         }
 
-        // Saat halaman web pertama kali dibuka, jalankan fungsi-fungsi ini:
+        // ==========================================
+        // FUNGSI TAHAP 2: PENCARIAN & EDIT DATA
+        // ==========================================
+        
+        // A. Mencari Data di Supabase
+        async function doSearchEditPegawai() {
+            const kw = document.getElementById('editSearchKeyword').value.trim();
+            if (!kw) { Swal.fire('Perhatian', 'Ketik nama atau NIP pencarian!', 'warning'); return; }
+            
+            const btn = document.getElementById('btnSearchEdit');
+            btn.disabled = true; btn.innerText = "Mencari...";
+
+            // Mencari di Supabase dengan filter 'ilike' (pencarian teks yang mirip)
+            const { data, error } = await supabaseClient
+                .from('penugasan_pegawai')
+                .select('*')
+                .or(`nama.ilike.%${kw}%,nip_nippk.ilike.%${kw}%`)
+                .order('no', { ascending: false })
+                .limit(20); // Dibatasi 20 hasil agar tidak berat
+
+            btn.disabled = false; btn.innerText = "Cari";
+
+            if (error) {
+                showAlert('danger', 'Gagal mencari data di Supabase: ' + error.message);
+                return;
+            }
+
+            currentEditList = data || [];
+            if (!currentEditList.length) {
+                Swal.fire('Info', `Tidak ada data yang cocok dengan pencarian "${kw}".`, 'info');
+                document.getElementById('editSearchResultArea').classList.add('hidden');
+                return;
+            }
+
+            // Membangun tabel hasil pencarian
+            document.getElementById('editSearchResultBody').innerHTML = currentEditList.map((p, idx) => `
+                <tr class="hover:bg-slate-800 transition">
+                    <td class="p-2.5">
+                        <button type="button" class="bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold px-3 py-1.5 rounded text-xs transition shadow cursor-pointer" onclick="selectPegawaiToEdit(${idx})">Edit</button>
+                    </td>
+                    <td class="p-2.5 font-mono text-blue-400 font-bold">${p.no || '-'}</td>
+                    <td class="p-2.5 font-bold">${p.nama || '-'}</td>
+                    <td class="p-2.5 font-mono">${p.nip_nippk || '-'}</td>
+                    <td class="p-2.5 truncate max-w-[150px]" title="${p.satuan_penugasan || ''}">${p.satuan_penugasan || '-'}</td>
+                    <td class="p-2.5">
+                        <span class="px-2 py-1 bg-slate-700 text-xs rounded-md font-semibold">${p.status || '-'}</span>
+                    </td>
+                </tr>
+            `).join('');
+            
+            document.getElementById('editSearchResultArea').classList.remove('hidden');
+            document.getElementById('editFormContainer').classList.add('hidden'); // Tutup form edit jika sedang terbuka
+        }
+
+        // B. Memasukkan data ke Form Edit saat tombol "Edit" diklik
+        function selectPegawaiToEdit(idx) {
+            const p = currentEditList[idx]; 
+            if (!p) return;
+
+            // Memasukkan 'no' (Primary Key/Penanda Unik) ke dalam input tersembunyi
+            document.getElementById('edit_noUrut').value = p.no;
+            
+            // Memasukkan data lainnya ke formulir
+            document.getElementById('edit_nama').value = p.nama || '';
+            document.getElementById('edit_nip').value = p.nip_nippk || '';
+            document.getElementById('edit_satuanTugas').value = p.satuan_penugasan || '';
+            document.getElementById('edit_periode').value = p.periode_penugasan || '';
+            document.getElementById('edit_status').value = p.status || 'Proses';
+            
+            // Menampilkan form edit ke layar
+            document.getElementById('editFormContainer').classList.remove('hidden');
+            document.getElementById('editFormContainer').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // C. Menyimpan perubahan (Update) ke Supabase
+        async function submitUpdateData(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnUpdateData');
+            btn.disabled = true; btn.innerText = "Memperbarui ke Supabase...";
+
+            const noUrut = document.getElementById('edit_noUrut').value;
+
+            // Merakit data yang akan diupdate
+            const payload = {
+                nama: document.getElementById('edit_nama').value,
+                nip_nippk: document.getElementById('edit_nip').value,
+                satuan_penugasan: document.getElementById('edit_satuanTugas').value,
+                periode_penugasan: document.getElementById('edit_periode').value,
+                status: document.getElementById('edit_status').value
+            };
+
+            // Melakukan UPDATE ke Supabase berdasarkan kolom 'no'
+            const { data, error } = await supabaseClient
+                .from('penugasan_pegawai')
+                .update(payload)
+                .eq('no', noUrut);
+
+            btn.disabled = false; btn.innerText = "💾 Simpan Perubahan Data ke Database Supabase";
+
+            if (error) {
+                showAlert('danger', 'Gagal memperbarui data: ' + error.message);
+            } else {
+                showAlert('success', `<strong>Sukses!</strong> Data pegawai <strong>${payload.nama}</strong> berhasil diperbarui di Supabase.`);
+                
+                // Menutup form dan merefresh daftar pencarian
+                document.getElementById('editFormContainer').classList.add('hidden');
+                doSearchEditPegawai(); 
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        // Dijalankan pertama kali saat web dibuka
         window.onload = function() {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('tglSK').value = today;
